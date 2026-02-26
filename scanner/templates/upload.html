@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Upload Excel</title>
+    <style>
+        body {
+            font-family: Arial;
+            text-align: center;
+            background: #0f172a;
+            color: white;
+            padding-top: 50px;
+        }
+        .box {
+            background: #111827;
+            width: 350px;
+            margin: auto;
+            padding: 20px;
+            border-radius: 15px;
+        }
+        button {
+            background: #10b981;
+            border: none;
+            padding: 10px 20px;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #059669;
+        }
+        .msg {
+            margin-top: 15px;
+            color: #6ee7b7;
+        }
+    </style>
+</head>
+<body>
+
+<div class="box">
+    <h2>📊 Upload Excel File</h2>
+
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form }}
+        <br><br>
+        <button type="submit">Upload</button>
+    </form>
+
+    <div class="msg">{{ message }}</div>
+</div>
+
+</body>
+</html>

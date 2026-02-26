@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <title>Barcode Scanner</title>
+
+    <script src="https://unpkg.com/html5-qrcode"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            background: #111827;
+            width: 360px;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            text-align: center;
+        }
+
+        h2 {
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        #reader {
+            margin-top: 15px;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .result-card {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: 0.3s;
+        }
+
+        .success {
+            background: #064e3b;
+            border: 1px solid #10b981;
+            color: #6ee7b7;
+        }
+
+        .error {
+            background: #7f1d1d;
+            border: 1px solid #ef4444;
+            color: #fecaca;
+        }
+
+        .waiting {
+            background: #1f2933;
+            border: 1px solid #374151;
+            color: #9ca3af;
+        }
+
+        .product-name {
+            font-size: 18px;
+            font-weight: bold;
+            margin: 8px 0;
+        }
+
+        .qty {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        .footer {
+            margin-top: 15px;
+            font-size: 12px;
+            color: #9ca3af;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>📷 Barcode Scanner</h2>
+    <div id="reader"></div>
+
+    <div id="result" class="result-card waiting">
+        Waiting for scan...
+    </div>
+
+    <div class="footer">
+        Scan product barcode to verify
+    </div>
+</div>
+
+<script>
+    function onScanSuccess(decodedText) {
+
+        fetch(`/check/?barcode=${decodedText}`)
+            .then(response => response.json())
+            .then(data => {
+
+                const result = document.getElementById("result");
+
+                if (data.exists) {
+                    result.className = "result-card success";
+                    result.innerHTML = `
+                        ✅ Product Found
+                        <div class="product-name">${data.name}</div>
+                        <div class="qty">Stock: ${data.qty}</div>
+                    `;
+                    beep();
+                    vibrate();
+                } else {
+                    result.className = "result-card error";
+                    result.innerHTML = "❌ Barcode Not Found";
+                }
+            });
+    }
+
+    function onScanFailure(error) {}
+
+    function beep() {
+        const audio = new Audio("https://actions.google.com/sounds/v1/cartoon/beep_short.ogg");
+        audio.play();
+    }
+
+    function vibrate() {
+        if (navigator.vibrate) {
+            navigator.vibrate(200);
+        }
+    }
+
+    const scanner = new Html5QrcodeScanner("reader", {
+        fps: 10,
+        qrbox: 250
+    });
+
+    scanner.render(onScanSuccess, onScanFailure);
+</script>
+
+</body>
+</html>
