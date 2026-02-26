@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Scan History</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            color: white;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: #111827;
+            width: 95%;
+            max-width: 600px;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: space-around;
+            background: #0f172a;
+            padding: 10px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .nav-btn {
+            text-decoration: none;
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+            padding: 6px 10px;
+            border-radius: 8px;
+        }
+
+        .nav-btn:hover {
+            background: #1e293b;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #1f2937;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: center;
+        }
+
+        th {
+            background: #374151;
+        }
+
+        tr:nth-child(even) {
+            background: #111827;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 15px;
+            color: #9ca3af;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <!-- Navbar -->
+    <div class="navbar">
+        <a href="/" class="nav-btn">🏠 Home</a>
+        <a href="/scan/" class="nav-btn">📷 Scan</a>
+        <a href="/history/" class="nav-btn">📋 History</a>
+    </div>
+
+    <h2>📋 Scan History</h2>
+
+    <table>
+        <tr>
+            <th>Barcode</th>
+            <th>Name</th>
+            <th>Quantity</th>
+        </tr>
+
+        {% for scan in scans %}
+        <tr>
+            <td>{{ scan.barcode }}</td>
+            <td>{{ scan.name }}</td>
+            <td>{{ scan.scanned_qty }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="3" class="empty">No scans recorded yet</td>
+        </tr>
+        {% endfor %}
+
+    </table>
+
+</div>
+
+</body>
+</html>

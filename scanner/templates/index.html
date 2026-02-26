@@ -1,10 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <link rel="manifest" href="/static/manifest.json">
-    <meta name="theme-color" content="#0f172a">
     <title>Barcode Scanner</title>
 
+    <!-- Scanner Library -->
     <script src="https://unpkg.com/html5-qrcode"></script>
 
     <style>
@@ -25,7 +24,8 @@
 
         .container {
             background: #111827;
-            width: 360px;
+            width: 95%;
+            max-width: 360px;
             border-radius: 20px;
             padding: 20px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.4);
@@ -34,7 +34,6 @@
 
         h2 {
             margin-bottom: 10px;
-            font-weight: 600;
         }
 
         #reader {
@@ -43,11 +42,39 @@
             overflow: hidden;
         }
 
+        /* ✅ LATEST UPDATE — Quantity Input */
+        #qty {
+            margin-top: 15px;
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
+            border: none;
+            font-size: 16px;
+            text-align: center;
+        }
+
+        /* ✅ LATEST UPDATE — Save Button */
+        #saveBtn {
+            margin-top: 10px;
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
+            border: none;
+            background: #10b981;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        #saveBtn:hover {
+            background: #059669;
+        }
+
         .result-card {
             margin-top: 20px;
             padding: 15px;
             border-radius: 12px;
-            font-size: 16px;
             transition: 0.3s;
         }
 
@@ -72,12 +99,7 @@
         .product-name {
             font-size: 18px;
             font-weight: bold;
-            margin: 8px 0;
-        }
-
-        .qty {
-            font-size: 14px;
-            opacity: 0.8;
+            margin-top: 8px;
         }
 
         .footer {
@@ -87,11 +109,31 @@
         }
     </style>
 </head>
-<body>
 
+<body>
 <div class="container">
+
+    <!-- ✅ NAVBAR HERE -->
+    <div class="navbar">
+        <a href="/" class="nav-btn">🏠 Home</a>
+        <a href="/scan/" class="nav-btn">📷 Scan</a>
+        <a href="/history/" class="nav-btn">📋 History</a>
+    </div>
     <h2>📷 Barcode Scanner</h2>
+
     <div id="reader"></div>
+
+    <!-- ✅ LATEST UPDATE — Quantity Field -->
+    <input 
+        type="number" 
+        id="qty" 
+        placeholder="Enter quantity"
+        value="1"
+        min="1"
+    >
+
+    <!-- ✅ LATEST UPDATE — Save Quantity Button -->
+    <button id="saveBtn">💾 Save Quantity</button>
 
     <div id="result" class="result-card waiting">
         Waiting for scan...
@@ -103,6 +145,8 @@
 </div>
 
 <script>
+    let lastScannedProduct = null;  // ✅ LATEST UPDATE
+
     function onScanSuccess(decodedText) {
 
         fetch(`/check/?barcode=${decodedText}`)
@@ -112,15 +156,27 @@
                 const result = document.getElementById("result");
 
                 if (data.exists) {
+
+                    // ✅ LATEST UPDATE — Store scanned product
+                    lastScannedProduct = {
+                        barcode: decodedText,
+                        name: data.name
+                    };
+
                     result.className = "result-card success";
                     result.innerHTML = `
                         ✅ Product Found
                         <div class="product-name">${data.name}</div>
-                        <div class="qty">Stock: ${data.qty}</div>
+                        <div>Stock: ${data.qty}</div>
                     `;
+
                     beep();
                     vibrate();
+
                 } else {
+
+                    lastScannedProduct = null;
+
                     result.className = "result-card error";
                     result.innerHTML = "❌ Barcode Not Found";
                 }
@@ -146,6 +202,36 @@
     });
 
     scanner.render(onScanSuccess, onScanFailure);
+
+    /* ✅ LATEST UPDATE — Save Button Logic */
+    document.getElementById("saveBtn").addEventListener("click", () => {
+
+        if (!lastScannedProduct) {
+            alert("Scan a product first!");
+            return;
+        }
+
+        const qty = document.getElementById("qty").value;
+
+        fetch("/save/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                barcode: lastScannedProduct.barcode,
+                name: lastScannedProduct.name,
+                qty: qty
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            alert("Quantity Saved ✅");
+
+            // ✅ Reset quantity
+            document.getElementById("qty").value = 1;
+        });
+    });
 </script>
 
 </body>

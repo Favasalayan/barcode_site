@@ -1,18 +1,36 @@
 import pandas as pd
-from django.shortcuts import render
-from django.http import JsonResponse
-from .models import Product
-from .forms import ExcelUploadForm
+import json
+
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from django.http import JsonResponse, HttpResponse
+from django.views.decorators.csrf import csrf_exempt
+
+from .models import Product, Scanhistory
+
+
+
+# HOME PAGE
+
+def home(request):
+    return render(request, "home.html")
+
+
+
+# SCANNER PAGE
 
 def index(request):
     return render(request, "index.html")
+
+
+
+# CHECK BARCODE (NO AUTO SAVE HERE)
 
 def check_barcode(request):
     barcode = request.GET.get('barcode')
 
     if barcode:
-        barcode = barcode.strip()
-        barcode = barcode.replace('.0', '')  # Fix scanner/excel issue
+        barcode = barcode.strip().replace('.0', '')
 
     try:
         product = Product.objects.get(barcode=barcode)
@@ -25,35 +43,61 @@ def check_barcode(request):
 
     except Product.DoesNotExist:
         return JsonResponse({'exists': False})
-    
-def upload_excel(request):
-    message = ""
 
+
+
+# SAVE SCAN (ONLY SAVE HERE)
+
+@csrf_exempt
+def save_scan(request):
     if request.method == "POST":
-        form = ExcelUploadForm(request.POST, request.FILES)
+        data = json.loads(request.body)
 
-        if form.is_valid():
-            excel_file = request.FILES['file']
+        barcode = data.get("barcode")
+        name = data.get("name")
+        qty = int(data.get("qty", 1))
 
-            df = pd.read_excel(excel_file)
+        Scanhistory.objects.create(
+            barcode=barcode,
+            name=name,
+            scanned_qty=qty
+        )
 
-            for _, row in df.iterrows():
-                barcode = str(row['item_number']).replace('.0', '').strip()
+        return JsonResponse({"status": "saved"})
 
-                Product.objects.get_or_create(
-                    barcode=barcode,
-                    defaults={
-                        'name': row['Name'],
-                        'qty': int(row['QTY'])
-                    }
-                )
 
-            message = "✅ Excel uploaded successfully!"
 
-    else:
-        form = ExcelUploadForm()
+# HISTORY PAGE
 
-    return render(request, "upload.html", {
-        'form': form,
-        'message': message
-    })
+def history(request):
+    scans = Scanhistory.objects.all().order_by('-id')  # safer than scan_time
+    return render(request, "history.html", {'scans': scans})
+
+
+
+# EXCEL UPLOAD
+
+def upload_excel(request):
+    if request.method == 'POST':
+        excel_file = request.FILES.get('excel_file')
+
+        if not excel_file:
+            messages.error(request, "No file uploaded.")
+            return redirect('upload_excel')
+
+        df = pd.read_excel(excel_file)
+
+        for _, row in df.iterrows():
+            Product.objects.update_or_create(
+                barcode=str(row['item_number']),
+                defaults={
+                    'name': row['Name'],   # match Excel column exactly
+                    'qty': int(row['QTY'])
+                }
+            )
+
+        messages.success(request, "Excel uploaded successfully.")
+        return redirect('home')
+
+    return render(request, 'upload.html')
+
