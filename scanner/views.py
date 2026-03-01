@@ -8,6 +8,7 @@ from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .models import Product
+from .serializers import ProductSerializer
 
 from .models import Product, Scanhistory
 
@@ -105,16 +106,13 @@ def upload_excel(request):
     return render(request, 'upload.html')
 
 #API
-
+    
 @api_view(['GET'])
-def check_barcode(request, barcode):
+def scan_product(request, barcode):
     try:
         product = Product.objects.get(barcode=barcode)
-        return Response({
-            "name": product.name,
-            "stock": product.stock,
-            "price": product.price
-        })
+        serializer = ProductSerializer(product)
+        return Response(serializer.data)
     except Product.DoesNotExist:
-        return Response({"error": "Product not found"}, status=404)
+        return Response({"error": "Product not found"})
 
