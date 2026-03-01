@@ -115,4 +115,24 @@ def scan_product(request, barcode):
         return Response(serializer.data)
     except Product.DoesNotExist:
         return Response({"error": "Product not found"})
+    
+@api_view(['POST'])
+def update_stock(request):
+    barcode = request.data.get("barcode")
+    quantity = int(request.data.get("quantity"))
+
+    try:
+        product = Product.objects.get(barcode=barcode)
+
+        product.quantity += quantity   # + or - stock
+        product.save()
+
+        return Response({
+            "name": product.name,
+            "barcode": product.barcode,
+            "quantity": product.quantity
+        })
+
+    except Product.DoesNotExist:
+        return Response({"error": "Product not found"})
 

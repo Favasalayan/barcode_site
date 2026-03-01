@@ -16,7 +16,7 @@ Including another URLconf
 """
 from django.urls import path
 from . import views
-from .views import scan_product
+from .views import scan_product, update_stock
 
 urlpatterns = [
     path('', views.home, name='home'),         
@@ -25,4 +25,5 @@ urlpatterns = [
     path('check/', views.check_barcode),
     path('save/', views.save_scan),
     path('api/scan/<str:barcode>/', scan_product),
+    path('api/update-stock/', update_stock),
 ]
