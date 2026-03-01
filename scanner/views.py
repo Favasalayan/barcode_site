@@ -5,6 +5,9 @@ from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from .models import Product
 
 from .models import Product, Scanhistory
 
@@ -100,4 +103,18 @@ def upload_excel(request):
         return redirect('home')
 
     return render(request, 'upload.html')
+
+#API
+
+@api_view(['GET'])
+def check_barcode(request, barcode):
+    try:
+        product = Product.objects.get(barcode=barcode)
+        return Response({
+            "name": product.name,
+            "stock": product.stock,
+            "price": product.price
+        })
+    except Product.DoesNotExist:
+        return Response({"error": "Product not found"}, status=404)
 
