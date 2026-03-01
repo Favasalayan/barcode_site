@@ -42,7 +42,7 @@
             overflow: hidden;
         }
 
-        /* ✅ LATEST UPDATE — Quantity Input */
+        /* Quantity Input */
         #qty {
             margin-top: 15px;
             width: 100%;
@@ -53,7 +53,7 @@
             text-align: center;
         }
 
-        /* ✅ LATEST UPDATE — Save Button */
+         /*Save Button*/ 
         #saveBtn {
             margin-top: 10px;
             width: 100%;
@@ -113,17 +113,17 @@
 <body>
 <div class="container">
 
-    <!-- ✅ NAVBAR HERE -->
+    <!--  NAVBAR HERE -->
     <div class="navbar">
         <a href="/" class="nav-btn">🏠 Home</a>
         <a href="/scan/" class="nav-btn">📷 Scan</a>
         <a href="/history/" class="nav-btn">📋 History</a>
     </div>
-    <h2>📷 Barcode Scanner</h2>
+    <h2> Barcode Scanner</h2>
 
     <div id="reader"></div>
 
-    <!-- ✅ LATEST UPDATE — Quantity Field -->
+    <!--  Quantity Field -->
     <input 
         type="number" 
         id="qty" 
@@ -132,7 +132,7 @@
         min="1"
     >
 
-    <!-- ✅ LATEST UPDATE — Save Quantity Button -->
+    <!-- Save Quantity Button -->
     <button id="saveBtn">💾 Save Quantity</button>
 
     <div id="result" class="result-card waiting">
@@ -145,7 +145,7 @@
 </div>
 
 <script>
-    let lastScannedProduct = null;  // ✅ LATEST UPDATE
+    let lastScannedProduct = null;  
 
     function onScanSuccess(decodedText) {
 
@@ -157,7 +157,7 @@
 
                 if (data.exists) {
 
-                    // ✅ LATEST UPDATE — Store scanned product
+                    // Store scanned product
                     lastScannedProduct = {
                         barcode: decodedText,
                         name: data.name
@@ -203,7 +203,7 @@
 
     scanner.render(onScanSuccess, onScanFailure);
 
-    /* ✅ LATEST UPDATE — Save Button Logic */
+    /*  Save Button Logic */
     document.getElementById("saveBtn").addEventListener("click", () => {
 
         if (!lastScannedProduct) {
@@ -228,7 +228,7 @@
         .then(data => {
             alert("Quantity Saved ✅");
 
-            // ✅ Reset quantity
+            //  Reset quantity
             document.getElementById("qty").value = 1;
         });
     });
