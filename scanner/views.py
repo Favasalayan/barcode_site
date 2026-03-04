@@ -1,138 +1,133 @@
 import pandas as pd
-import json
-
+from django.db import transaction
 from django.shortcuts import render, redirect
 from django.contrib import messages
-from django.http import JsonResponse, HttpResponse
-from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from .models import Product
-from .serializers import ProductSerializer
-
 from .models import Product, Scanhistory
+from .forms import ExcelUploadForm
+from django.http import JsonResponse
 
 
-
-# HOME PAGE
+# -----------------------
+# WEB PAGES
+# -----------------------
 
 def home(request):
-    return render(request, "home.html")
+    total_products = Product.objects.count()
+    total_scans = Scanhistory.objects.count()
 
+    return render(request, "home.html", {
+        "total_products": total_products,
+        "total_scans": total_scans
+    })
+    
+    
+def scan_page(request):
+    return render(request, "scan.html")
 
-
-# SCANNER PAGE
-
-def index(request):
-    return render(request, "index.html")
-
-
-
-# CHECK BARCODE (NO AUTO SAVE HERE)
-
-def check_barcode(request):
-    barcode = request.GET.get('barcode')
-
-    if barcode:
-        barcode = barcode.strip().replace('.0', '')
+def check_barcode_api(request):
+    barcode = request.GET.get("barcode")
 
     try:
         product = Product.objects.get(barcode=barcode)
 
         return JsonResponse({
-            'exists': True,
-            'name': product.name,
-            'qty': product.qty
+            "exists": True,
+            "name": product.name,
+            "required_qty": product.required_qty
         })
 
     except Product.DoesNotExist:
-        return JsonResponse({'exists': False})
+        return JsonResponse({"exists": False})
 
-
-
-# SAVE SCAN (ONLY SAVE HERE)
-
-@csrf_exempt
-def save_scan(request):
-    if request.method == "POST":
-        data = json.loads(request.body)
-
-        barcode = data.get("barcode")
-        name = data.get("name")
-        qty = int(data.get("qty", 1))
-
-        Scanhistory.objects.create(
-            barcode=barcode,
-            name=name,
-            scanned_qty=qty
-        )
-
-        return JsonResponse({"status": "saved"})
-
-
-
-# HISTORY PAGE
 
 def history(request):
-    scans = Scanhistory.objects.all().order_by('-id')  # safer than scan_time
-    return render(request, "history.html", {'scans': scans})
+    scans = Scanhistory.objects.all().order_by("-scan_time")
+    return render(request, "history.html", {"scans": scans})
 
 
-
+# -----------------------
 # EXCEL UPLOAD
+# -----------------------
 
 def upload_excel(request):
-    if request.method == 'POST':
-        excel_file = request.FILES.get('excel_file')
+    if request.method == "POST":
+        form = ExcelUploadForm(request.POST, request.FILES)
 
-        if not excel_file:
-            messages.error(request, "No file uploaded.")
-            return redirect('upload_excel')
+        if form.is_valid():
+            excel_file = request.FILES["excel_file"]
 
-        df = pd.read_excel(excel_file)
+            try:
+                with transaction.atomic():
 
-        for _, row in df.iterrows():
-            Product.objects.update_or_create(
-                barcode=str(row['item_number']),
-                defaults={
-                    'name': row['Name'],   # match Excel column exactly
-                    'qty': int(row['QTY'])
-                }
-            )
+                    # 🔥 Delete old order list
+                    Product.objects.all().delete()
 
-        messages.success(request, "Excel uploaded successfully.")
-        return redirect('home')
+                    # 🔥 Delete old scan history
+                    Scanhistory.objects.all().delete()
 
-    return render(request, 'upload.html')
+                    # 🔥 Read new Excel
+                    df = pd.read_excel(excel_file)
 
-#API
-    
-@api_view(['GET'])
+                    for _, row in df.iterrows():
+                        barcode = str(row["item_number"]).split(".")[0].strip()
+
+                        Product.objects.create(
+                            barcode=barcode,
+                            name=str(row["Name"]).strip(),
+                            required_qty=int(row["QTY"])
+                        )
+
+                messages.success(request, "New order uploaded. Old data cleared successfully.")
+                return redirect("home")
+
+            except Exception as e:
+                messages.error(request, f"Upload failed: {str(e)}")
+                return redirect("upload_excel")
+
+    else:
+        form = ExcelUploadForm()
+
+    return render(request, "upload.html", {"form": form})
+
+# -----------------------
+# ANDROID APIs
+# -----------------------
+
+# 1️⃣ Check Product Exists
+@api_view(["GET"])
 def scan_product(request, barcode):
     try:
         product = Product.objects.get(barcode=barcode)
-        serializer = ProductSerializer(product)
-        return Response(serializer.data)
+
+        return Response({
+            "exists": True,
+            "name": product.name,
+            "required_qty": product.required_qty
+        })
+
     except Product.DoesNotExist:
-        return Response({"error": "Product not found"})
-    
-@api_view(['POST'])
-def update_stock(request):
+        return Response({"exists": False})
+
+
+# 2️⃣ Save Scan Result
+@api_view(["POST"])
+def save_scan_api(request):
     barcode = request.data.get("barcode")
-    quantity = int(request.data.get("quantity"))
+    available_qty = int(request.data.get("available_qty"))
 
     try:
         product = Product.objects.get(barcode=barcode)
 
-        product.quantity += quantity   # + or - stock
-        product.save()
+        Scanhistory.objects.create(
+            barcode=product.barcode,
+            name=product.name,
+            required_qty=product.required_qty,
+            available_qty=available_qty
+        )
 
-        return Response({
-            "name": product.name,
-            "barcode": product.barcode,
-            "quantity": product.quantity
-        })
+        return Response({"status": "saved"})
 
     except Product.DoesNotExist:
         return Response({"error": "Product not found"})
-

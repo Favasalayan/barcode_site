@@ -1,4 +1,5 @@
 from django import forms
 
+
 class ExcelUploadForm(forms.Form):
-    file = forms.FileField()
+    excel_file = forms.FileField()

@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h3 class="mb-4">📷 Scan Product</h3>
+
+<div class="row">
+    <div class="col-md-6">
+        <div id="reader" style="width:100%;"></div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card p-4 shadow">
+            <h5>Product Info</h5>
+            <p><strong>Name:</strong> <span id="product_name">-</span></p>
+            <p><strong>Required Qty:</strong> <span id="required_qty">-</span></p>
+
+            <input type="number" id="available_qty" class="form-control mb-3"
+                   placeholder="Enter Available Quantity">
+
+            <button class="btn btn-primary w-100" onclick="saveScan()">
+                Save Scan
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<script>
+let scannedBarcode = null;
+
+function onScanSuccess(decodedText) {
+    scannedBarcode = decodedText;
+
+    fetch(`/api/check-barcode/?barcode=${decodedText}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.exists) {
+                document.getElementById("product_name").innerText = data.name;
+                document.getElementById("required_qty").innerText = data.required_qty;
+            } else {
+                alert("Product not found!");
+            }
+        });
+}
+
+let html5QrcodeScanner = new Html5QrcodeScanner(
+    "reader",
+    { fps: 10, qrbox: 250 }
+);
+
+html5QrcodeScanner.render(onScanSuccess);
+
+function saveScan() {
+    let qty = document.getElementById("available_qty").value;
+
+    fetch("/api/save-scan/", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": "{{ csrf_token }}"
+        },
+        body: JSON.stringify({
+            barcode: scannedBarcode,
+            available_qty: qty
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert("Saved successfully!");
+        location.reload();
+    });
+}
+</script>
+
+{% endblock %}

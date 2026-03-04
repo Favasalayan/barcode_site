@@ -24,9 +24,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "django-insecure-59+h*wmk67$$945^%b7i#=82x%pm%)tmrj57!bq5gbbkq&1(s%"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
-ALLOWED_HOSTS = ['.onrender.com']
+ALLOWED_HOSTS = ['*'] #'.onrender.com'
 
 
 # Application definition
@@ -77,9 +77,13 @@ WSGI_APPLICATION = "barcode_site.wsgi.application"
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'stock_system',
+        'USER': 'stock_user',
+        'PASSWORD': 'StrongPass123!',
+        'HOST': 'localhost',
+        'PORT': '3306',
     }
 }
 
